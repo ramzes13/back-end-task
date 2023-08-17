@@ -53,9 +53,18 @@ export function initTokenValidationRequestHandler(sequelizeClient: SequelizeClie
 // NOTE(roman): assuming that `tokenValidationRequestHandler` is placed before
 export function initAdminValidationRequestHandler(): RequestHandler {
   return function adminValidationRequestHandler(req, res, next): void {
-    throw new NotImplementedError('ADMIN_VALIDATION_NOT_IMPLEMENTED_YET');
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      const { user } = (req as any).auth;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (user.type != UserType.ADMIN) throw new UnauthorizedError('UNACCESIBLE');
+      return next();
+    } catch (error) {
+      return next(error);
+    }
   };
 }
+
 
 export interface RequestAuth {
   token: string;

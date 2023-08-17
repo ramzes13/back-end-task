@@ -5,7 +5,7 @@ import type { SequelizeClient } from '../sequelize';
 import type { User } from '../repositories/types';
 
 import { BadRequestError, UnauthorizedError } from '../errors';
-import { hashPassword, generateToken } from '../security';
+import { hashPassword, generateToken, compareHash } from '../security';
 import { initTokenValidationRequestHandler, initAdminValidationRequestHandler, RequestAuth } from '../middleware/security';
 import { UserType } from '../constants';
 
@@ -56,7 +56,6 @@ function initCreateUserRequestHandler(sequelizeClient: SequelizeClient): Request
     try {
       // NOTE(roman): missing validation and cleaning
       const { type, name, email, password } = req.body as CreateUserData;
-
       await createUser({ type, name, email, password }, sequelizeClient);
 
       return res.status(204).end();
@@ -82,8 +81,10 @@ function initLoginUserRequestHandler(sequelizeClient: SequelizeClient): RequestH
       if (!user) {
         throw new UnauthorizedError('EMAIL_OR_PASSWORD_INCORRECT');
       }
+      const hashedPass = await hashPassword(password);
+      const passwordMatch = await compareHash(user.passwordHash, hashedPass);
 
-      if (user.passwordHash !== hashPassword(password)) {
+      if (passwordMatch) {
         throw new UnauthorizedError('EMAIL_OR_PASSWORD_INCORRECT');
       }
 

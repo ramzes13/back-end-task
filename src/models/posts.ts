@@ -7,6 +7,7 @@ export function setupPostsModel(modelName: string, sequelize: Sequelize): void {
     id: {
       type: DataTypes.INTEGER,
       allowNull: false,
+      primaryKey: true,
     },
     title: {
       type: DataTypes.STRING,
