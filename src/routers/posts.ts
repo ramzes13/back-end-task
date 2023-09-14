@@ -8,10 +8,14 @@ import { BadRequestError, UnauthorizedError } from '../errors';
 import { initTokenValidationRequestHandler, initAdminValidationRequestHandler, RequestAuth } from '../middleware/security';
 import { UserType } from '../constants';
 
+// check how to implement Dependency Injection
 export function initPostsRouter(sequelizeClient: SequelizeClient): Router {
     const router = Router({ mergeParams: true });
 
+    // `tokenValidation` need to be set as a middleware. 
     const tokenValidation = initTokenValidationRequestHandler(sequelizeClient);
+
+    // remove non used constants
     const adminValidation = initAdminValidationRequestHandler();
 
     router.route('/')
@@ -31,6 +35,8 @@ function initListPostsRequestHandler(sequelizeClient: SequelizeClient): RequestH
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         const { user } = (req as any).auth as RequestAuth;
         try {
+
+            // `Posts.filter((post) => !post.isHidden)` this filter can be done on DB side
             const Posts = await models.posts.findAll();
             if (user.type == UserType.BLOGGER) { Posts.filter((post) => !post.isHidden); }
             res.send(Posts);
@@ -108,10 +114,11 @@ function initDeletePostRequestHandler(sequelizeClient: SequelizeClient): Request
 }
 
 async function createPost(data: CreatePostData, sequelizeClient: SequelizeClient): Promise<void> {
+    // need to validate user input
     const { title, content, authorId, isHidden } = data;
 
     const { models } = sequelizeClient;
-
+    // try to add validations in separate function/ middleware. This will simplify the process of writing unit tests, and reutilization.
     const similarPost = await models.posts.findOne({
         attributes: ['id', 'title', 'content'],
         where: {
@@ -122,12 +129,14 @@ async function createPost(data: CreatePostData, sequelizeClient: SequelizeClient
         },
         raw: true,
     }) as Pick<Post, 'id' | 'title' | 'content'> | null;
+    // instead of select one, you can count, this will be faster
     if (similarPost) throw new BadRequestError('POST_ALREADY_EXISTS');
 
     await models.posts.create({ title, content, authorId, isHidden });
 }
 
 async function updatePost(id: number, user: User, data: UpdatePostData, sequelizeClient: SequelizeClient): Promise<void> {
+    // need to validate user input
     const { title, content, authorId, isHidden } = data;
 
     const { models } = sequelizeClient;

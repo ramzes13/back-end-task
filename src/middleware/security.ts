@@ -54,6 +54,7 @@ export function initTokenValidationRequestHandler(sequelizeClient: SequelizeClie
 export function initAdminValidationRequestHandler(): RequestHandler {
   return function adminValidationRequestHandler(req, res, next): void {
     try {
+      // avoid any type
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       const { user } = (req as any).auth;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
